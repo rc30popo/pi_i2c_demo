@@ -5,8 +5,23 @@
 #
 
 import time,smbus,sys,datetime
+import signal
 from ctrl_acm1602 import ctrl_acm1602,ctrl_acm1602_error
 from ctrl_lps25h import ctrl_lps25h,ctrl_lps25h_error
+
+# 1秒毎起床するハンドラ
+def intervalHandler(signum,frame):
+    global acm1602
+    global lps25h
+    acm1602.return_home()
+    cur_press = lps25h.get_pressure()
+    cur_temp = lps25h.get_temp()
+    dt_now = datetime.datetime.now()
+    time_str = dt_now.strftime('%m/%d %H:%M:%S')
+    press_temp_str = '%5.1fC,%6.1fhPa' % (cur_temp,cur_press)
+    acm1602.write_string(time_str)
+    acm1602.set_cursor(0,1)
+    acm1602.write_string(press_temp_str)
 
 i2c_channel = 1 # Raspberry PI2に合わせて1,適宜修正の事
 i2c = smbus.SMBus(i2c_channel)
@@ -24,22 +39,42 @@ except ctrl_lps25h_error as e:
     print(e)
     exit(1)
 
+# 開始メッセージ
+acm1602.write_string('Activating..')
+# 各秒の開始から10ms以内を待ち
+while True:
+    dt_now = datetime.datetime.now()
+    if dt_now.microsecond < 10000:
+        break
+
+# インターバル起床するハンドラを設定
+signal.signal(signal.SIGALRM,intervalHandler)
+signal.setitimer(signal.ITIMER_REAL, 1, 1)
+
+
+# キーボード割り込み待ちループ
 try:
     while True:
 #        acm1602.clear_display()
-        acm1602.return_home()
-        cur_press = lps25h.get_pressure()
-        cur_temp = lps25h.get_temp()
-        dt_now = datetime.datetime.now()
-        time_str = dt_now.strftime('%m/%d %H:%M:%S')
-        press_temp_str = '%5.1fC,%6.1fhPa' % (cur_temp,cur_press)
-        acm1602.write_string(time_str)
-        acm1602.set_cursor(0,1)
-        acm1602.write_string(press_temp_str)
-        time.sleep(1)
+#        acm1602.return_home()
+#        cur_press = lps25h.get_pressure()
+#        cur_temp = lps25h.get_temp()
+#        dt_now = datetime.datetime.now()
+#        time_str = dt_now.strftime('%m/%d %H:%M:%S')
+#        press_temp_str = '%5.1fC,%6.1fhPa' % (cur_temp,cur_press)
+#        acm1602.write_string(time_str)
+#        acm1602.set_cursor(0,1)
+#        acm1602.write_string(press_temp_str)
+        time.sleep(600)
 
 except KeyboardInterrupt:
+    signal.setitimer(signal.ITIMER_REAL,0)
+    acm1602.clear_display()
+    acm1602.write_string('Terminated!!')
     print('\nCTRL-C pressed!!')
+    time.sleep(1)
+    acm1602.clear_display()
+    acm1602.write_string('Bye!')
     print('Exit')
     sys.exit(0)
 
