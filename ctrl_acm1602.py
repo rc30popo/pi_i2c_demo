@@ -5,6 +5,9 @@
 #  copyright (C) RC30-popo: r.t.19891111@gmail.com
 #  https://github.com/rc30popo
 #
+#  R0.2 2020/08/14 - 半角カナ対応
+#                    対応範囲: ｡〜ﾝ
+# 　
 
 import time,smbus
 
@@ -28,7 +31,6 @@ class ctrl_acm1602:
         self.clear_display()
         self.return_home()
         self.ctrl_display(1,0,0)
-
 
     def clear_display(self):
         self.i2c.write_byte_data(self.acm1602_addr, 0x00, 0x01)
@@ -57,13 +59,31 @@ class ctrl_acm1602:
 
     def write_string(self,str):
         for i in range(len(str)):
-            self.i2c.write_byte_data(self.acm1602_addr,0x80,ord(str[i]))
-            self.x += 1
-            if self.x == 16:
-                self.x = 0
-                self.y = 1 - self.y
-                self.set_cursor(self.x,self.y)
+            self.write_code(self.chr_to_code(str[i]))
+#            self.i2c.write_byte_data(self.acm1602_addr,0x80,ord(str[i]))
+#            self.x += 1
+#            if self.x == 16:
+#                self.x = 0
+#                self.y = 1 - self.y
+#                self.set_cursor(self.x,self.y)
 #                time.sleep(0.001)
+    def write_code(self,code):
+        self.i2c.write_byte_data(self.acm1602_addr,0x80,code)
+        self.x += 1
+        if self.x == 16:
+            self.x = 0
+            self.y = 1 - self.y
+            self.set_cursor(self.x,self.y)
+    
+    def chr_to_code(self,chr):
+        code = ord(chr)
+        if code >= 0x20 and code <= 0x7d: # 半角スペース〜'}'
+            pass
+        elif code >= 65377 and code <= 65437: # 半角カナ '｡'〜'ﾝ'
+            code = code - 65377 + 0xA1 # 0xA1〜0xDDに変換
+        else: # サポート範囲外
+            code = 0x20 # 半角スペースに変換
+        return code
 
 # テストコード
 if __name__ == '__main__':
@@ -84,5 +104,24 @@ if __name__ == '__main__':
     acm1602.write_string(test_str1)
     acm1602.set_cursor(0,1)
     acm1602.write_string(test_str2)
+
+    time.sleep(3)
+    test_str3 = 'ACM1602ﾉﾃｽﾄ'
+    test_str4 = '｢ｺﾝﾆﾁﾜ｡｣'
+    acm1602.clear_display()
+    acm1602.return_home()
+    acm1602.write_string(test_str3)
+    acm1602.set_cursor(0,1)
+    acm1602.write_string(test_str4)
+
+    time.sleep(3)
+    test_str5 = '10,000'
+    acm1602.clear_display()
+    acm1602.return_home()
+    acm1602.write_string(test_str5)
+    acm1602.write_code(0xFB) # 万
+    acm1602.write_code(0xFC) # 円
+    
+
 
 
