@@ -3,11 +3,28 @@
 #  Raspberry PI用
 #    キャラクタ液晶 ACM1602と気圧センサーLPS25Hを利用したデモ
 #
+#  Rev.0.3 2020/08/17 SIGTERMで終了する様実装(バックグラウンド実行:nohup対応)
 
 import time,smbus,sys,datetime
 import signal
 from ctrl_acm1602 import ctrl_acm1602,ctrl_acm1602_error
 from ctrl_lps25h import ctrl_lps25h,ctrl_lps25h_error
+
+# 終了処理
+def finish(message):
+    signal.setitimer(signal.ITIMER_REAL,0)
+    acm1602.clear_display()
+    acm1602.write_string('Terminated!!')
+    print(message)
+    time.sleep(1)
+    acm1602.clear_display()
+    acm1602.write_string('Bye!')
+    print('Exit')
+    sys.exit(0)
+
+# SIGTERMハンドラ
+def sigtermHandler(signum,frame):
+    finish('SIGTERM received!!')
 
 # 1秒毎起床するハンドラ
 def intervalHandler(signum,frame):
@@ -47,6 +64,8 @@ while True:
     if dt_now.microsecond < 10000:
         break
 
+# SIGTERMハンドラを設定
+signal.signal(signal.SIGTERM,sigtermHandler)
 # インターバル起床するハンドラを設定
 signal.signal(signal.SIGALRM,intervalHandler)
 signal.setitimer(signal.ITIMER_REAL, 1, 1)
@@ -68,14 +87,15 @@ try:
         time.sleep(600)
 
 except KeyboardInterrupt:
-    signal.setitimer(signal.ITIMER_REAL,0)
-    acm1602.clear_display()
-    acm1602.write_string('Terminated!!')
-    print('\nCTRL-C pressed!!')
-    time.sleep(1)
-    acm1602.clear_display()
-    acm1602.write_string('Bye!')
-    print('Exit')
-    sys.exit(0)
+    finish('\nCTRL-C pressed!!')
+#    signal.setitimer(signal.ITIMER_REAL,0)
+#    acm1602.clear_display()
+#    acm1602.write_string('Terminated!!')
+#    print('\nCTRL-C pressed!!')
+#    time.sleep(1)
+#    acm1602.clear_display()
+#    acm1602.write_string('Bye!')
+#    print('Exit')
+#    sys.exit(0)
 
 
