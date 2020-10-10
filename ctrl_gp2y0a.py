@@ -16,6 +16,8 @@ from ctrl_mcp3002 import ctrl_mcp3002
 
 
 class ctrl_gp2y0a25:
+    # MCP3002のVREF: 3.3V - 回路構成に合わせて修正のこと
+    vref_mcp3002 = 3.3
     # 距離-電圧対応テーブル
     #   数値はかなりラフなので、きちんとデータシート見て調整のこと
     dist_table = ((7,3.0),
@@ -43,7 +45,7 @@ class ctrl_gp2y0a25:
         self.tbl_len = len(ctrl_gp2y0a25.dist_table)
     # 測定: 距離をcm単位で返却
     def read_dist(self):
-        voltage = self.mcp3002.read_ch(self.channel) / 1023 * 3.3
+        voltage = self.mcp3002.read_ch(self.channel) / 1023 * ctrl_gp2y0a25.vref_mcp3002
         hit = -1
         for i in range(0,self.tbl_len - 1):
             if voltage <= ctrl_gp2y0a25.dist_table[i][1] and voltage >= ctrl_gp2y0a25.dist_table[i + 1][1]:
