@@ -72,6 +72,12 @@ CTRL-CもしくはSIGTERM送信で終了します。SIGTERMはnohupを利用し�
 
 SIGKILLは使用しないで下さい。
 
+#### 動作デモ
+
+下記のYoutube動画を見て下さい。
+
+https://www.youtube.com/watch?v=xga_DkdRDqw
+
 
 
 ### ctrl_acm1602.py
@@ -100,6 +106,7 @@ ctrl_gp2y0a.vref_mcp3002にVrefの値が設定されているので、使用す�
 テスト用のサンプルコードを含み、単体でも動作します。
 
 MCP3002とGP2Y0A21YK0Fの制御については下記のブログエントリーも参照願います。
+
 https://rc30-popo.hatenablog.com/entry/2020/10/10/114915
 
 
