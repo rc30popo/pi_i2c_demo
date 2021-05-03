@@ -5,13 +5,34 @@
 #
 #  Rev.0.3 2020/08/17 SIGTERMで終了する様実装(バックグラウンド実行:nohup対応)
 #  Rev.0.4 2020/08/19 記録データのCSVファイル出力追加
+#  Rev.0.5 2021/05/03 2重起動防止追加
 
 import time,smbus,sys,datetime
 import signal
 import argparse
+from os import path
+import subprocess
 
 from ctrl_acm1602 import ctrl_acm1602,ctrl_acm1602_error
 from ctrl_lps25h import ctrl_lps25h,ctrl_lps25h_error
+
+# 2重起動防止処理
+# 下記記事の丸写し
+#  https://qiita.com/dev_colla/items/6ab765fc6daf2c2a2baa
+def checkDupexec():
+    file_name = path.basename(__file__)
+    p1 = subprocess.Popen(["ps", "-ef"], stdout=subprocess.PIPE)
+    p2 = subprocess.Popen(["grep", file_name], stdin=p1.stdout, stdout=subprocess.PIPE)
+    p3 = subprocess.Popen(["grep", "python"], stdin=p2.stdout, stdout=subprocess.PIPE)
+    p4 = subprocess.Popen(["wc", "-l"], stdin=p3.stdout, stdout=subprocess.PIPE)
+    p1.stdout.close()
+    p2.stdout.close()
+    p3.stdout.close()
+    output = p4.communicate()[0].decode("utf8").replace('\n','')
+
+    if int(output) != 1:
+        print('Duplicated execution!! Exit!')
+        exit(1)
 
 # 終了処理
 def finish(message):
@@ -60,6 +81,8 @@ def intervalHandler(signum,frame):
         if rec_interval_cnt == rec_interval:
             rec_interval_cnt = 0
 
+# 2重起動チェック
+checkDupexec()
 
 # デフォルト引数
 rec_interval = 60 # レコードインターバル60秒
